@@ -1,0 +1,20 @@
+{
+  "name": "todo-app",
+  "version": "1.0.0",
+  "description": "todolist",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app/index.js",
+    "dev": "nodemon app/index.js",
+    "command-test": "node app/index.js test"
+  },
+  "author": "khoa-ph",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^2.0.19"
+  },
+  "dependencies": {
+    "yargs": "^17.5.1"
+  }
+}
