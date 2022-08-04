@@ -1,9 +1,8 @@
 //import yargs from "yargs"; // es6
 
 const yargs = require('yargs'); // es5 (common js)
-const { readAllTask, createTask } = require('./model/task');
-const fs = require('fs');
-
+const { readAllTask, createTask, readDetailTask, updateTask, deleteTask } = require('./model/task');
+const chalk = require("chalk");
 
 // Tạo lệnh test
 // node app/index.js test
@@ -28,7 +27,8 @@ yargs.command({
     },
     handler: (args) => {
         const { title, description } = args;
-        createTask(title, description);
+        const newTask = createTask(title, description);
+        console.log("Đã tạo mới công việc thành công: ", newTask);
     }
 });
 
@@ -37,7 +37,7 @@ yargs.command({
     command: "read-all",
     handler: () => {
         const result = readAllTask();
-        console.log("taskJson: ", result);
+        console.log(chalk.blue("taskJson: "), result);
     }
 });
 
@@ -51,21 +51,16 @@ yargs.command({
     },
     handler: (args) => {
         const { id } = args; 
-        const tasks = JSON.parse(fs.readFileSync("task.json"));
-        const result = tasks.find(task => task.id == id);
-        if (result != undefined) {
-            console.log("/---------------");
-            console.log("Task ID: " + result.id);
-            console.log("Task Title: " + result.title);
-            console.log("Task Description: " + result.description);
-            console.log("/---------------");
+        const task = readDetailTask(id);
+        if (task) {
+            console.log("task : ", task);
         } else {
-            console.log("Task have id = " + id + " not found");
+            console.log(chalk.red("Not found!"));
         }
     }
-})
+});
 
-// update - node app/index.js update
+// update - node app/index.js update --id="1" --title="Python" --description="Is programming language"
 yargs.command({
     command: "update",
     builder: {
@@ -81,26 +76,16 @@ yargs.command({
     },
     handler: (args) => {
         const { id, title, description } = args;
-        const tasks = JSON.parse(fs.readFileSync("task.json"));
-        const index = tasks.findIndex(task => task.id == id);
-        if (index != -1) {
-            tasks[index].title = title;
-            tasks[index].description = description;
-            const taskStr = JSON.stringify(tasks);
-            fs.writeFile('task.json', taskStr, 'utf-8', (err) => {
-                if (err) {
-                    throw err;
-                } else {
-                    console.log("Task have id = " + id + " updated");
-                }
-            });
+        const task = updateTask(id, title, description);
+        if (task) {
+            console.log("task updated : ", task);
         } else {
-            console.log("Task have id = " + id + " not found!");
+            console.log("Not found!");
         }
     }
 })
 
-// delete - node app/index.js delete
+// delete - node app/index.js delete --id="1"
 yargs.command({
     command: "delete",
     builder: {
@@ -110,20 +95,11 @@ yargs.command({
     },
     handler: (args) => {
         const { id } = args;
-        const tasks = JSON.parse(fs.readFileSync("task.json"));
-        const result = tasks.findIndex(task => task.id == id);
-        if (result != -1) {
-            tasks.splice(result, 1);
-            const taskStr = JSON.stringify(tasks);
-            fs.writeFile('task.json', taskStr, 'utf-8', (err) => {
-                if (err) {
-                    throw err
-                } else {
-                    console.log("Task have id = " + id + " deleted");
-                }
-            });
+        const task = deleteTask(id);
+        if (task) {
+            console.log("delete task : ", task);
         } else {
-            console.log("Task have id = " + id + " not found");
+            console.log("Not found!");
         }
     }
 });
