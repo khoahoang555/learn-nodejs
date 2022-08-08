@@ -1,12 +1,38 @@
 const express = require('express');
 const path = require('path');
+const { getWeather } = require('./model/getWeather');
 
 const app = express();
 const pathPublic = path.join(__dirname, '../public');
 app.use(express.static(pathPublic));
 
-app.get('/', (req, resp) => {
-    resprender('index');
+app.get('/', async (req, resp) => {
+    const location = req.query.location;
+    if (location) {
+        const weather = await getWeather(location);
+        if (weather !== undefined) {
+            resp.render('index', {
+                status: true,
+                location,
+                temperature: weather.temperature,
+                statusWeather: weather.status,
+                icon: weather.icon,
+                humidity: weather.humidity,
+                windSpeed: weather.windSpeed
+            });
+        } else {
+            // catch error could not found address
+            resp.render('index', {
+                status: false
+            });
+        }
+    } else {
+        // catch error not input field search
+        resp.render('index', {
+            status: false
+        });
+    }
+
 });
 
 app.set('view engine', 'hbs');
