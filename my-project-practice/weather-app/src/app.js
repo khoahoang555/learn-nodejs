@@ -10,7 +10,7 @@ app.get('/', async (req, resp) => {
     const location = req.query.location;
     if (location) {
         const weather = await getWeather(location);
-        if (weather !== undefined) {
+        if (weather) {
             resp.render('index', {
                 status: true,
                 location,
