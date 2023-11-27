@@ -18,7 +18,8 @@ app.use(express.json());
 app.use(express.static(`${__dirname}/public`));
 
 app.use((req, resp, next) => {
-  console.log('Hello from the middleware');
+  req.requestTime = new Date().toISOString();
+  console.log(req.headers);
   next();
 })
 
