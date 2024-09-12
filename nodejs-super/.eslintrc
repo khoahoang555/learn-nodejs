@@ -5,7 +5,8 @@
   "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended", "eslint-config-prettier", "prettier"],
   "rules": {
     "@typescript-eslint/no-explicit-any": "off",
-    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "req|res|next|val" }],
+//    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "req|res|next|val" }],
+    "@typescript-eslint/no-unused-vars": "off",
 //    "@typescript-eslint/typedef": ["error", { "variableDeclaration":  true }],
     "@typescript-eslint/typedef": "off",
     "prettier/prettier": [

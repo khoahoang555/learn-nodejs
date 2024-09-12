@@ -1,4 +1,4 @@
-import { checkSchema, CustomValidator } from 'express-validator'
+import { checkSchema } from 'express-validator'
 import { validate } from '~/utils/validation'
 
 export const registerValidator = validate(

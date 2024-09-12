@@ -1,4 +1,4 @@
-import { Request, Response } from 'express'
+import { NextFunction, Request, Response } from 'express'
 import databaseService from '~/services/database.services'
 import User from '~/models/schemas/User.schema'
 import usersService from '~/services/users.services'
@@ -9,9 +9,10 @@ export const loginController = (req: Request, resp: Response) => {
   })
 }
 
-export const registerController = async (req: Request, resp: Response) => {
+export const registerController = async (req: Request, resp: Response, next: NextFunction) => {
   const { email, password } = req.body
   try {
+    throw new Error('Loi roi')
     const result = await usersService.register({ email, password })
 
     return resp.json({
@@ -19,9 +20,10 @@ export const registerController = async (req: Request, resp: Response) => {
       result
     })
   } catch (error) {
-    console.log(error)
-    return resp.status(400).json({
-      error: 'Register failed'
-    })
+    // console.log(error)
+    // return resp.status(400).json({
+    //   error: 'Register failed'
+    // })
+    return next(error)
   }
 }
