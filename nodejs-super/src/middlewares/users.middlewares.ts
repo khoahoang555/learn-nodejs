@@ -1,5 +1,8 @@
-import { checkSchema } from 'express-validator'
+import { checkSchema, CustomValidator } from 'express-validator'
 import { validate } from '~/utils/validation'
+import databaseService from '~/services/database.services'
+import usersService from '~/services/users.services'
+import { ErrorWithStatus } from '~/models/Errors'
 
 export const registerValidator = validate(
   checkSchema({
@@ -16,7 +19,17 @@ export const registerValidator = validate(
     email: {
       notEmpty: true,
       isEmail: true,
-      trim: true
+      trim: true,
+      custom: {
+        options: async (value) => {
+          const isExistEmail = await usersService.checkEmailExist(value)
+          if (isExistEmail) {
+            throw new Error('Email already exist')
+            // throw new ErrorWithStatus({ message: 'Email already exists', status: 401 })
+          }
+          return true
+        }
+      }
     },
     password: {
       notEmpty: true,
