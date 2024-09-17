@@ -3,6 +3,8 @@ import { ValidationChain, validationResult } from 'express-validator'
 import { RunnableValidationChains } from 'express-validator/lib/middlewares/schema'
 import { EntityError, ErrorWithStatus } from '~/models/Errors'
 import HTTP_STATUS from '~/constants/httpStatus'
+import { config } from 'dotenv'
+config()
 
 // can be reused by many routes
 export const validate = (validation: RunnableValidationChains<ValidationChain>) => {

@@ -1,93 +1,225 @@
-import { checkSchema, CustomValidator } from 'express-validator'
+import { checkSchema } from 'express-validator'
 import { validate } from '~/utils/validation'
-import databaseService from '~/services/database.services'
 import usersService from '~/services/users.services'
+import { USERS_MESSAGES } from '~/constants/messages'
+import databaseService from '~/services/database.services'
+import { hashPassword } from '~/utils/crypto'
+import { IsEmptyOptions } from 'express-validator/lib/options'
+import { verifyToken } from '~/utils/jwt'
 import { ErrorWithStatus } from '~/models/Errors'
+import HTTP_STATUS from '~/constants/httpStatus'
+
+export const loginValidator = validate(
+  checkSchema(
+    {
+      email: {
+        isEmail: {
+          errorMessage: USERS_MESSAGES.EMAIL_IS_INVALID
+        },
+        trim: true,
+        custom: {
+          options: async (value, { req }) => {
+            const user = await databaseService.users.findOne({
+              email: value,
+              password: hashPassword(req.body.password)
+            })
+            if (user === null) {
+              throw new Error(USERS_MESSAGES.EMAIL_OR_PASSWORD_INCORRECT)
+            }
+            req.user = user
+            return true
+          }
+        }
+      },
+      password: {
+        notEmpty: {
+          errorMessage: USERS_MESSAGES.PASSWORD_IS_REQUIRED
+        },
+        isString: {
+          errorMessage: USERS_MESSAGES.PASSWORD_MUST_BE_A_STRING
+        },
+        isLength: {
+          options: {
+            min: 6,
+            max: 50
+          },
+          errorMessage: USERS_MESSAGES.PASSWORD_LENGTH_MUST_BE_FROM_6_TO_50
+        },
+        isStrongPassword: {
+          options: {
+            minLength: 6,
+            minLowercase: 1,
+            minUppercase: 1,
+            minNumbers: 1,
+            minSymbols: 1
+          },
+          errorMessage: USERS_MESSAGES.PASSWORD_MUST_BE_STRONG
+        }
+      }
+    },
+    ['body']
+  )
+)
 
 export const registerValidator = validate(
+  checkSchema(
+    {
+      name: {
+        notEmpty: {
+          errorMessage: USERS_MESSAGES.NAME_IS_REQUIRED
+        },
+        isString: {
+          errorMessage: USERS_MESSAGES.NAME_MUST_BE_A_STRING
+        },
+        isLength: {
+          options: {
+            min: 1,
+            max: 100
+          },
+          errorMessage: USERS_MESSAGES.NAME_LENGTH_MUST_BE_FROM_1_TO_100
+        },
+        trim: true
+      },
+      email: {
+        isEmail: {
+          errorMessage: USERS_MESSAGES.EMAIL_IS_INVALID
+        },
+        trim: true,
+        custom: {
+          options: async (value) => {
+            const isExistEmail = await usersService.checkEmailExist(value)
+            if (isExistEmail) {
+              throw new Error(USERS_MESSAGES.EMAIL_ALREADY_EXISTS)
+            }
+            return true
+          }
+        }
+      },
+      password: {
+        notEmpty: {
+          errorMessage: USERS_MESSAGES.PASSWORD_IS_REQUIRED
+        },
+        isString: {
+          errorMessage: USERS_MESSAGES.PASSWORD_MUST_BE_A_STRING
+        },
+        isLength: {
+          options: {
+            min: 6,
+            max: 50
+          },
+          errorMessage: USERS_MESSAGES.PASSWORD_LENGTH_MUST_BE_FROM_6_TO_50
+        },
+        isStrongPassword: {
+          options: {
+            minLength: 6,
+            minLowercase: 1,
+            minUppercase: 1,
+            minNumbers: 1,
+            minSymbols: 1
+          },
+          errorMessage: USERS_MESSAGES.PASSWORD_MUST_BE_STRONG
+        }
+      },
+      confirm_password: {
+        notEmpty: {
+          errorMessage: USERS_MESSAGES.CONFIRM_PASSWORD_IS_REQUIRED
+        },
+        isString: {
+          errorMessage: USERS_MESSAGES.CONFIRM_PASSWORD_MUST_BE_A_STRING
+        },
+        isLength: {
+          options: {
+            min: 6,
+            max: 50
+          },
+          errorMessage: USERS_MESSAGES.CONFIRM_PASSWORD_LENGTH_MUST_BE_FROM_6_TO_50
+        },
+        isStrongPassword: {
+          options: {
+            minLength: 6,
+            minLowercase: 1,
+            minUppercase: 1,
+            minNumbers: 1,
+            minSymbols: 1
+          },
+          errorMessage: USERS_MESSAGES.CONFIRM_PASSWORD_MUST_BE_STRONG
+        },
+        custom: {
+          options: (value, { req }) => {
+            if (value !== req.body.password) {
+              throw new Error(USERS_MESSAGES.CONFIRM_PASSWORD_MUST_BE_THE_SAME_AS_PASSWORD)
+            }
+            return true
+          }
+        }
+      },
+      date_of_birth: {
+        isISO8601: {
+          options: {
+            strict: true,
+            strictSeparator: true
+          },
+          errorMessage: USERS_MESSAGES.DATE_OF_BIRTH_MUST_BE_ISO8601
+        }
+      }
+    },
+    ['body']
+  )
+)
+
+export const accessTokenValidator = validate(
+  checkSchema(
+    {
+      Authorization: {
+        notEmpty: {
+          errorMessage: USERS_MESSAGES.ACCESS_TOKEN_IS_REQUIRED
+        },
+        custom: {
+          options: async (value: string, { req }) => {
+            const access_token = value.split(' ')[1]
+            if (!access_token) {
+              throw new ErrorWithStatus({
+                message: USERS_MESSAGES.ACCESS_TOKEN_IS_REQUIRED,
+                status: HTTP_STATUS.UNAUTHORIZED
+              })
+            }
+            const decoded_authorization = await verifyToken({ token: access_token })
+            req.decoded_authorization = decoded_authorization
+            return true
+          }
+        }
+      }
+    },
+    ['headers']
+  )
+)
+
+export const refreshTokenValidator = validate(
   checkSchema({
-    name: {
-      notEmpty: true,
-      isLength: {
-        options: {
-          min: 1,
-          max: 100
-        }
-      },
-      trim: true
-    },
-    email: {
-      notEmpty: true,
-      isEmail: true,
-      trim: true,
-      custom: {
-        options: async (value) => {
-          const isExistEmail = await usersService.checkEmailExist(value)
-          if (isExistEmail) {
-            throw new Error('Email already exist')
-            // throw new ErrorWithStatus({ message: 'Email already exists', status: 401 })
-          }
-          return true
-        }
-      }
-    },
-    password: {
-      notEmpty: true,
-      isString: true,
-      isLength: {
-        options: {
-          min: 6,
-          max: 50
-        }
-      },
-      isStrongPassword: {
-        options: {
-          minLength: 6,
-          minLowercase: 1,
-          minUppercase: 1,
-          minNumbers: 1,
-          minSymbols: 1
-        },
-        errorMessage:
-          'Password must be at least 6 characters long and contain at least 1 lowercase letter, ' +
-          '1 uppercase letter, 1 number, 1 symbol'
-      }
-    },
-    confirm_password: {
-      notEmpty: true,
-      isString: true,
-      isLength: {
-        options: {
-          min: 6,
-          max: 50
-        }
-      },
-      isStrongPassword: {
-        options: {
-          minLength: 6,
-          minLowercase: 1,
-          minUppercase: 1,
-          minNumbers: 1,
-          minSymbols: 1
-        },
-        errorMessage:
-          'Password must be at least 6 characters long and contain at least 1 lowercase letter, ' +
-          '1 uppercase letter, 1 number, 1 symbol'
+    refresh_token: {
+      notEmpty: {
+        errorMessage: USERS_MESSAGES.ACCESS_TOKEN_IS_REQUIRED
       },
       custom: {
-        options: (value, { req }) => {
-          if (value !== req.body.password) {
-            throw new Error('Password confirmation does not match password')
+        options: async (value, { req }) => {
+          try {
+            const [decoded_refresh_token, refresh_token] = await Promise.all([
+              verifyToken({ token: value }),
+              databaseService.refreshTokens.findOne({ token: value })
+            ])
+            if (refresh_token === null) {
+              throw new ErrorWithStatus({
+                message: USERS_MESSAGES.USED_REFRESH_TOKEN_OR_NOT_EXIST,
+                status: HTTP_STATUS.UNAUTHORIZED
+              })
+            }
+            return true
+          } catch (error) {
+            throw new ErrorWithStatus({
+              message: USERS_MESSAGES.REFRESH_TOKEN_IS_INVALID,
+              status: HTTP_STATUS.UNAUTHORIZED
+            })
           }
-          return true
-        }
-      }
-    },
-    date_of_birth: {
-      isISO8601: {
-        options: {
-          strict: true,
-          strictSeparator: true
         }
       }
     }
