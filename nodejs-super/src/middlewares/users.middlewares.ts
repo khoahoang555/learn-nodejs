@@ -8,6 +8,7 @@ import { IsEmptyOptions } from 'express-validator/lib/options'
 import { verifyToken } from '~/utils/jwt'
 import { ErrorWithStatus } from '~/models/Errors'
 import HTTP_STATUS from '~/constants/httpStatus'
+import { JsonWebTokenError } from 'jsonwebtoken'
 
 export const loginValidator = validate(
   checkSchema(
@@ -198,7 +199,7 @@ export const refreshTokenValidator = validate(
   checkSchema({
     refresh_token: {
       notEmpty: {
-        errorMessage: USERS_MESSAGES.ACCESS_TOKEN_IS_REQUIRED
+        errorMessage: USERS_MESSAGES.REFRESH_TOKEN_IS_REQUIRED
       },
       custom: {
         options: async (value, { req }) => {
@@ -213,13 +214,17 @@ export const refreshTokenValidator = validate(
                 status: HTTP_STATUS.UNAUTHORIZED
               })
             }
-            return true
+            req.decoded_refresh_token = decoded_refresh_token
           } catch (error) {
-            throw new ErrorWithStatus({
-              message: USERS_MESSAGES.REFRESH_TOKEN_IS_INVALID,
-              status: HTTP_STATUS.UNAUTHORIZED
-            })
+            if (error instanceof JsonWebTokenError) {
+              throw new ErrorWithStatus({
+                message: USERS_MESSAGES.REFRESH_TOKEN_IS_INVALID,
+                status: HTTP_STATUS.UNAUTHORIZED
+              })
+            }
+            throw error
           }
+          return true
         }
       }
     }

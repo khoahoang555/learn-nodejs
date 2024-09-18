@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { loginController, registerController } from '~/controllers/users.controllers'
+import { loginController, logoutController, registerController } from '~/controllers/users.controllers'
 import {
   accessTokenValidator,
   loginValidator,
@@ -12,8 +12,6 @@ const usersRoutes: Router = Router()
 
 usersRoutes.post('/login', loginValidator, wrapRequestHandler(loginController))
 usersRoutes.post('/register', registerValidator, wrapRequestHandler(registerController))
-usersRoutes.post('/logout', accessTokenValidator, refreshTokenValidator, (req, resp) => {
-  resp.status(200).json({ message: 'success' })
-})
+usersRoutes.post('/logout', accessTokenValidator, refreshTokenValidator, wrapRequestHandler(logoutController))
 
 export default usersRoutes
